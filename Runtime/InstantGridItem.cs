@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
-using static mulova.ugui.InstantScrollRect;
+using static mulova.ugui.InstantGridScroll;
 
 namespace mulova.ugui
 {
-    public abstract class InstantScrollItem : MonoBehaviour
+    public abstract class InstantGridItem : MonoBehaviour
     {
         abstract internal RectTransform bound { get; }
         private RectTransform _rect;

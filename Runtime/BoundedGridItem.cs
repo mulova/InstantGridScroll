@@ -2,7 +2,7 @@
 
 namespace mulova.ugui
 {
-    public class FixedBoundScrollItem : InstantScrollItem
+    public class BoundedGridItem : InstantGridItem
     {
         [SerializeField] private RectTransform bounds;
         internal override RectTransform bound => bounds;

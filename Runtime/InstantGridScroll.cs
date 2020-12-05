@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace mulova.ugui
 {
-    public class InstantScrollRect : ScrollRect
+    public class InstantGridScroll : ScrollRect
     {
         internal class Item
         {
@@ -109,7 +109,7 @@ namespace mulova.ugui
         /// The 'wrapIndex' is the index within the child list, and 'realIndex' is the index using position logic.
         /// </summary>
 
-        [SerializeField] private InstantScrollItem prefab;
+        [SerializeField] private InstantGridItem prefab;
         private bool hideInactive => true;
         [SerializeField] private Vector2Int padding = new Vector2Int(1, 1);
         [SerializeField] private Vector4Int border = new Vector4Int();
@@ -121,9 +121,9 @@ namespace mulova.ugui
         private int startIndex = -1;
         private int endIndex = -1;
         private List<Item> items = new List<Item>();
-        private List<InstantScrollItem> children = new List<InstantScrollItem>();
-        private Dictionary<Item, InstantScrollItem> visibles = new Dictionary<Item, InstantScrollItem>();
-        private Queue<InstantScrollItem> available = new Queue<InstantScrollItem>();
+        private List<InstantGridItem> children = new List<InstantGridItem>();
+        private Dictionary<Item, InstantGridItem> visibles = new Dictionary<Item, InstantGridItem>();
+        private Queue<InstantGridItem> available = new Queue<InstantGridItem>();
 
         public bool isBottomPivot => viewRect.pivot.y == 0;
         public bool isLeftPivot => viewRect.pivot.x == 0;
@@ -133,7 +133,7 @@ namespace mulova.ugui
 
         public bool isContentFitInViewport => contentBounds.size.y < localClipBounds.height;
 
-        public delegate void InitDelegate(InstantScrollItem e, object data, int i);
+        public delegate void InitDelegate(InstantGridItem e, object data, int i);
         private IList contentData;
         public InitDelegate initDelegate;
 
@@ -269,7 +269,7 @@ namespace mulova.ugui
             }
         }
 
-        private void InitItem(InstantScrollItem c, int i)
+        private void InitItem(InstantGridItem c, int i)
         {
             int iRow = i / lineItemSize;
             int iCol = i % lineItemSize;
@@ -458,7 +458,7 @@ namespace mulova.ugui
             content.pivot = new Vector2(0, 1);
             content.offsetMin = Vector2.zero;
             content.offsetMax = Vector2.zero;
-            var list = transform.GetComponentsInChildren<InstantScrollItem>();
+            var list = transform.GetComponentsInChildren<InstantGridItem>();
 #if UNITY_EDITOR
             if (!Application.isPlaying)
             {
@@ -508,7 +508,7 @@ namespace mulova.ugui
 
             foreach (Transform t in content)
             {
-                if (t.TryGetComponent<InstantScrollItem>(out var e))
+                if (t.TryGetComponent<InstantGridItem>(out var e))
                 {
                     if (prefab == null && Application.isPlaying)
                     {
@@ -744,7 +744,7 @@ namespace mulova.ugui
             return hasHidden;
         }
 
-        private void RemoveCell(InstantScrollItem c)
+        private void RemoveCell(InstantGridItem c)
         {
             available.Enqueue(c);
             visibles.Remove(c.item);

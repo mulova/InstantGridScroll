@@ -2,9 +2,9 @@
 using UnityEditor;
 using UnityEditor.UI;
 
-[CustomEditor(typeof(InstantScrollRect), true)]
+[CustomEditor(typeof(InstantGridScroll), true)]
 [CanEditMultipleObjects]
-public class InstantScrollRectEditor : ScrollRectEditor
+public class InstantGridScrollEditor : ScrollRectEditor
 {
     private SerializedProperty m_Prefab;
     private SerializedProperty m_Padding;
@@ -42,7 +42,7 @@ public class InstantScrollRectEditor : ScrollRectEditor
             serializedObject.ApplyModifiedProperties();
             if (c.changed)
             {
-                (target as InstantScrollRect).Arrange();
+                (target as InstantGridScroll).Arrange();
             }
         }
     }
