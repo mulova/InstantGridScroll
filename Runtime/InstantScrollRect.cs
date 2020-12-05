@@ -128,8 +128,8 @@ namespace mulova.ugui
         public bool isBottomPivot => viewRect.pivot.y == 0;
         public bool isLeftPivot => viewRect.pivot.x == 0;
         public bool isScrollAtBottom => visibles.Count == 0 || (endIndex == items.Count - 1 && IsVisible(endIndex));
-        private float top => localClipBounds.yMax;
-        private float bottom => localClipBounds.yMin;
+        private float top => 0;
+        private float bottom => -localClipBounds.height;
 
         public bool isContentFitInViewport => contentBounds.size.y < localClipBounds.height;
 
@@ -291,8 +291,8 @@ namespace mulova.ugui
                     {
                         if (alignX)
                         {
-                            var left = localClipBounds.xMin;
-                            var right = localClipBounds.xMax;
+                            var left = 0;
+                            var right = localClipBounds.width;
                             x = isLeftPivot ? left - min.x + border.x : right - max.x - border.x;
                         }
                         else if (prefab != null)
@@ -353,8 +353,9 @@ namespace mulova.ugui
                             {
                                 var dy = max.y;
                                 var b0 = items[endIndex].bounds;
-                                var bottom = b0.min.y; // lower bound of previous
-                                var pos = new Vector2(x, Mathf.Round(bottom - 1 - dy - padding.y));
+                                var pos = isBottomPivot?
+                                    new Vector2(x, Mathf.Round(b0.max.y + 1 + dy + padding.y)): // go upward
+                                    new Vector2(x, Mathf.Round(b0.min.y - 1 - dy - padding.y)); // go downward
                                 min.x += pos.x;
                                 min.y += pos.y;
                                 max.x += pos.x;
@@ -366,7 +367,8 @@ namespace mulova.ugui
                             {
                                 bound = items[endIndex].bounds;
                                 var pos = items[endIndex].pos;
-                                pos.x += items[endIndex].bounds.size.x + padding.x;
+                                var span = items[endIndex].bounds.size.x + padding.x;
+                                pos.x = isLeftPivot? pos.x + span: pos.x - span;
                                 items[i].pos = pos;
                             }
                             endIndex = i;
@@ -379,7 +381,7 @@ namespace mulova.ugui
                     }
                     else
                     {
-                        // the very first cell
+                        // for the very first cell
                         var dy = isBottomPivot ? bottom - min.y : top - max.y - border.y;
                         min.x += x;
                         max.x += x;
@@ -530,6 +532,8 @@ namespace mulova.ugui
                 Debug.LogWarning("viewport or content is not assigned");
                 return;
             }
+            content.anchorMin = Vector2.zero;
+            content.anchorMax = Vector3.one;
             content.pivot = new Vector2(0, 1);
             content.offsetMin = Vector2.zero;
             content.offsetMax = Vector2.zero;
