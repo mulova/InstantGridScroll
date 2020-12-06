@@ -1,6 +1,7 @@
 ﻿using mulova.ugui;
 using UnityEditor;
 using UnityEditor.UI;
+using UnityEngine;
 
 [CustomEditor(typeof(InstantGridScroll), true)]
 [CanEditMultipleObjects]
@@ -14,9 +15,12 @@ public class InstantGridScrollEditor : ScrollRectEditor
     private SerializedProperty m_ChangeItemName;
     private SerializedProperty m_AlighX;
 
+    private InstantGridScroll grid;
+
     protected override void OnEnable()
     {
         base.OnEnable();
+        grid = target as InstantGridScroll;
         m_Prefab = serializedObject.FindProperty("prefab");
         m_Padding = serializedObject.FindProperty("padding");
         m_Border = serializedObject.FindProperty("border");
@@ -28,9 +32,22 @@ public class InstantGridScrollEditor : ScrollRectEditor
 
     public override void OnInspectorGUI()
     {
-        base.OnInspectorGUI();
+        if (!Application.isPlaying)
+        {
+            if (grid.content == null)
+            {
+                EditorGUILayout.HelpBox("content missing", MessageType.Error);
+            } else if (grid.content.GetComponentInChildren<InstantGridItem>(true) == null)
+            {
+                EditorGUILayout.HelpBox(typeof(InstantGridItem).Name + " missing", MessageType.Error);
+            } else if (m_LineItemSize.intValue <= 0)
+            {
+                EditorGUILayout.HelpBox("lineItemSize needs to be positive", MessageType.Error);
+            }
+        }
         using (var c = new EditorGUI.ChangeCheckScope())
         {
+            base.OnInspectorGUI();
             serializedObject.Update();
             EditorGUILayout.PropertyField(m_Prefab);
             EditorGUILayout.PropertyField(m_Padding);

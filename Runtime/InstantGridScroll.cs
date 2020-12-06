@@ -7,6 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace mulova.ugui
 {
+    [ExecuteInEditMode]
     public class InstantGridScroll : ScrollRect
     {
         internal class Item
@@ -136,6 +137,20 @@ namespace mulova.ugui
         public delegate void InitDelegate(InstantGridItem e, object data, int i);
         private IList contentData;
         public InitDelegate initDelegate;
+
+        protected override void Awake()
+        {
+            if (!Application.isPlaying)
+            {
+                if (viewport == null)
+                {
+                    viewport = transform as RectTransform;
+                    horizontal = false;
+                }
+            }
+        }
+#if UNITY_EDITOR
+#endif
 
         private void Update()
         {
@@ -510,16 +525,22 @@ namespace mulova.ugui
             {
                 if (t.TryGetComponent<InstantGridItem>(out var e))
                 {
-                    if (prefab == null && Application.isPlaying)
+                    if (Application.isPlaying)
                     {
-                        prefab = e;
+                        if (prefab == null)
+                        {
+                            prefab = e;
+                        }
+                        e.gameObject.SetActive(false);
                     }
-                    else if (prefab != e)
+                    if (prefab != e)
                     {
                         available.Enqueue(e);
                         children.Add(e);
+                    } else
+                    {
+                        e.gameObject.SetActive(false);
                     }
-                    e.gameObject.SetActive(false);
                 }
             }
             InitContentRoot();
@@ -545,7 +566,7 @@ namespace mulova.ugui
         /// <param name="forcedRefresh">true to update already visible entry</param>
         public void UpdateEntry(bool forcedRefresh, int focusIndex = -1)
         {
-            if (!gameObject.activeInHierarchy || !enabled)
+            if (!gameObject.activeInHierarchy || !enabled || lineItemSize <= 0)
             {
                 return;
             }
