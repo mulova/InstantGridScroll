@@ -139,6 +139,7 @@ namespace mulova.ugui
         private IList contentData;
         public InitDelegate initDelegate;
 
+#if UNITY_EDITOR
         protected override void Awake()
         {
             if (!Application.isPlaying)
@@ -150,7 +151,6 @@ namespace mulova.ugui
                 }
             }
         }
-#if UNITY_EDITOR
 #endif
 
         private void Update()
