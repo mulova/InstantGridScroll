@@ -10,13 +10,13 @@ namespace mulova.ugui
     [ExecuteInEditMode]
     public class InstantGridScroll : ScrollRect
     {
-        internal class Item
+        internal class ItemData
         {
             internal readonly int index;
             internal Vector2 pos;
             internal Bounds bounds;
 
-            internal Item(int i)
+            internal ItemData(int i)
             {
                 this.index = i;
             }
@@ -32,7 +32,7 @@ namespace mulova.ugui
                 {
                     return true;
                 }
-                return (obj as Item).pos == pos;
+                return (obj as ItemData).pos == pos;
             }
 
             public override int GetHashCode()
@@ -121,13 +121,14 @@ namespace mulova.ugui
 
         private int startIndex = -1;
         private int endIndex = -1;
-        private List<Item> items = new List<Item>();
+        private List<ItemData> items = new List<ItemData>();
         private List<InstantGridItem> children = new List<InstantGridItem>();
-        private Dictionary<Item, InstantGridItem> visibles = new Dictionary<Item, InstantGridItem>();
+        private Dictionary<ItemData, InstantGridItem> visibles = new Dictionary<ItemData, InstantGridItem>();
         private Queue<InstantGridItem> available = new Queue<InstantGridItem>();
 
+        public bool isCentered => viewRect.pivot.x == 0.5f;
         public bool isBottomPivot => viewRect.pivot.y == 0;
-        public bool isLeftPivot => viewRect.pivot.x == 0;
+        public bool isLeftPivot => viewRect.pivot.x != 1;
         public bool isScrollAtBottom => visibles.Count == 0 || (endIndex == items.Count - 1 && IsVisible(endIndex));
         private float top => 0;
         private float bottom => -localClipBounds.height;
@@ -214,7 +215,7 @@ namespace mulova.ugui
             {
                 return;
             }
-            UpdateEntry(true, focusIndex);
+            UpdateItems(true, focusIndex);
         }
 
         public bool IsVisible(int index)
@@ -293,7 +294,7 @@ namespace mulova.ugui
                 initDelegate?.Invoke(c, contentData[i], i);
                 if (items[i] == null)
                 {
-                    items[i] = new Item(i);
+                    items[i] = new ItemData(i);
                     var bound =
                         c.bound != null ?
                         new Bounds(c.rect.rect.center, c.rect.rect.size) :
@@ -463,7 +464,7 @@ namespace mulova.ugui
         }
 
         [ContextMenu("Arrange")]
-        public void Arrange()
+        public void ResetAndArrange()
         {
             if (viewport == null || content == null)
             {
@@ -494,7 +495,7 @@ namespace mulova.ugui
 
         public void WrapContent()
         {
-            UpdateEntry(false, -1);
+            UpdateItems(false, -1);
         }
 
         public void InsertBefore(int count)
@@ -506,7 +507,7 @@ namespace mulova.ugui
             startIndex += count;
             endIndex += count;
 
-            var inserts = new List<Item>();
+            var inserts = new List<ItemData>();
             for (int i = 0; i < count; ++i)
             {
                 inserts.Add(null);
@@ -563,8 +564,8 @@ namespace mulova.ugui
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="forcedRefresh">true to update already visible entry</param>
-        public void UpdateEntry(bool forcedRefresh, int focusIndex = -1)
+        /// <param name="forcedRefresh">true to update already visible item</param>
+        public void UpdateItems(bool forcedRefresh, int focusIndex = -1)
         {
             if (!gameObject.activeInHierarchy || !enabled || lineItemSize <= 0)
             {
@@ -646,7 +647,7 @@ namespace mulova.ugui
                     Focus(focusIndex);
                 }
                 // show inside bounds
-                ShowCellsInBounds(bottom, top, forcedRefresh);
+                ShowCellsInViewport(bottom, top, forcedRefresh);
                 if (!isScrollable)
                 {
                     ScrollToStart();
@@ -662,7 +663,7 @@ namespace mulova.ugui
             }
         }
 
-        private void ShowCellsInBounds(float min, float max, bool refreshData)
+        private void ShowCellsInViewport(float min, float max, bool refreshData)
         {
             // Instantiate upward if not yet created.
             while (startIndex > 0 && (items[startIndex].pos.y < max || startIndex % lineItemSize != 0))
@@ -698,6 +699,52 @@ namespace mulova.ugui
             {
                 ++i1;
                 ShowCell(i1, refreshData);
+            }
+            Align(i0, i1);
+        }
+
+        private void Align(int i0, int i1)
+        {
+            // align centered
+            if (viewport.pivot.x == 0.5f)
+            {
+                var iMin = i0;
+                var min = float.MaxValue;
+                var max = float.MinValue;
+                for (int i= i0; i<=i1; ++i)
+                {
+                    if (i%lineItemSize != 0)
+                    {
+                        min = Mathf.Min(min, items[i].pos.x + items[i].bounds.min.x);
+                        max = Mathf.Max(max, items[i].pos.x + items[i].bounds.max.x);
+                    } else
+                    {
+                        var delta = viewport.rect.width - (max - min);
+                        ShiftItem(iMin, i-1, delta*0.5f, 0);
+                        iMin = i;
+                        min = items[i].pos.x + items[i].bounds.min.x;
+                        max = items[i].pos.x + items[i].bounds.max.x;
+                    }
+                }
+                if (i1-iMin != lineItemSize-1)
+                {
+                    var delta = viewport.rect.width - (max - min);
+                    ShiftItem(iMin, i1, delta*0.5f, 0);
+                }
+            }
+        }
+
+        private void ShiftItem(int i0, int i1, float dx, float dy)
+        {
+            for (int i = i0; i <= i1; ++i)
+            {
+                var c = visibles.Find(items[i]);
+                if (c != null)
+                {
+                    items[i].pos = items[i].pos + new Vector2(dx, dy);
+                    //items[i].bounds.center = items[i].bounds.center + new Vector3(dx, dy, 0);
+                    c.pos = items[i].pos;
+                }
             }
         }
 

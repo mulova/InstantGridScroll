@@ -59,7 +59,7 @@ public class InstantGridScrollEditor : ScrollRectEditor
             serializedObject.ApplyModifiedProperties();
             if (c.changed)
             {
-                (target as InstantGridScroll).Arrange();
+                (target as InstantGridScroll).ResetAndArrange();
             }
         }
     }

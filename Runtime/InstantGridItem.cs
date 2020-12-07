@@ -18,7 +18,7 @@ namespace mulova.ugui
                 return _rect;
             }
         }
-        internal Item item { get; set; }
+        internal ItemData item { get; set; }
 
         internal bool isValid => item != null;
 
