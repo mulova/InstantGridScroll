@@ -32,12 +32,15 @@ namespace mulova.ugui
                 {
                     return true;
                 }
-                return (obj as ItemData).pos == pos;
+                var that = obj as ItemData;
+                return pos.x.Equals(that.pos.x) && pos.y.Equals(that.pos.y);
             }
 
             public override int GetHashCode()
             {
-                return pos.GetHashCode();
+                int hash = pos.x.GetHashCode() ^ 23 + pos.y.GetHashCode();
+                Debug.Log($"{pos.x}, {pos.y} = {hash}");
+                return hash;
             }
         }
 
