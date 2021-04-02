@@ -37,14 +37,18 @@ public class InstantGridScrollEditor : ScrollRectEditor
             if (grid.content == null)
             {
                 EditorGUILayout.HelpBox("content missing", MessageType.Error);
-            } else if (grid.content.GetComponentInChildren<InstantGridItem>(true) == null)
+            } else if (grid.content.GetComponentInChildren<GridItem>(true) == null)
             {
-                EditorGUILayout.HelpBox(typeof(InstantGridItem).Name + " missing", MessageType.Error);
+                EditorGUILayout.HelpBox(typeof(GridItem).Name + " missing", MessageType.Error);
             } else if (m_LineItemSize.intValue <= 0)
             {
                 EditorGUILayout.HelpBox("lineItemSize needs to be positive", MessageType.Error);
             }
-        }
+            else if (!grid.isBottomPivot && !grid.isTopPivot)
+            {
+                EditorGUILayout.HelpBox("viewRect.pivot.y must be 0 or 1", MessageType.Error);
+            }
+}
         using (var c = new EditorGUI.ChangeCheckScope())
         {
             base.OnInspectorGUI();

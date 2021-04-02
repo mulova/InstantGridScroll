@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
@@ -39,7 +40,6 @@ namespace mulova.ugui
             public override int GetHashCode()
             {
                 int hash = pos.x.GetHashCode() ^ 23 + pos.y.GetHashCode();
-                Debug.Log($"{pos.x}, {pos.y} = {hash}");
                 return hash;
             }
         }
@@ -72,13 +72,14 @@ namespace mulova.ugui
         {
             get
             {
-                if (_localClipBounds == null || transform.hasChanged)
+                if (_localClipBounds == null || viewRect.hasChanged)
                 {
                     var r = new Rect(viewRect.rect);
-                    //var relative = CalculateRelativeRectTransformBounds(viewRect, content);
-                    //r.center -= new Vector2(relative.min.x, relative.max.y);
+                    var relative = CalculateRelativeRectTransformBounds(viewRect, content);
+                    r.center -= new Vector2(relative.min.x, relative.max.y);
                     _localClipBounds = r;
-                    transform.hasChanged = false;
+                    viewRect.hasChanged = false;
+                    //Debug.Log("localClip:" + _localClipBounds);
                 }
                 return _localClipBounds.Value;
             }
@@ -113,7 +114,7 @@ namespace mulova.ugui
         /// The 'wrapIndex' is the index within the child list, and 'realIndex' is the index using position logic.
         /// </summary>
 
-        [SerializeField] private InstantGridItem prefab;
+        [SerializeField] private GridItem prefab;
         private bool hideInactive => true;
         [SerializeField] private Vector2Int padding = new Vector2Int(1, 1);
         [SerializeField] private Vector4Int border = new Vector4Int();
@@ -125,71 +126,23 @@ namespace mulova.ugui
         private int startIndex = -1;
         private int endIndex = -1;
         private List<ItemData> items = new List<ItemData>();
-        private List<InstantGridItem> children = new List<InstantGridItem>();
-        private Dictionary<ItemData, InstantGridItem> visibles = new Dictionary<ItemData, InstantGridItem>();
-        private Queue<InstantGridItem> available = new Queue<InstantGridItem>();
+        private List<GridItem> children = new List<GridItem>();
+        private Dictionary<ItemData, GridItem> visibles = new Dictionary<ItemData, GridItem>();
+        private Queue<GridItem> available = new Queue<GridItem>();
 
         public bool isCentered => viewRect.pivot.x == 0.5f;
         public bool isBottomPivot => viewRect.pivot.y == 0;
+        public bool isTopPivot => viewRect.pivot.y == 1;
         public bool isLeftPivot => viewRect.pivot.x != 1;
         public bool isScrollAtBottom => visibles.Count == 0 || (endIndex == items.Count - 1 && IsVisible(endIndex));
-        private float top => 0;
-        private float bottom => -localClipBounds.height;
+        private float top => localClipBounds.y + localClipBounds.height;
+        private float bottom => top - localClipBounds.height;
 
         public bool isContentFitInViewport => contentBounds.size.y < localClipBounds.height;
 
-        public delegate void InitDelegate(InstantGridItem e, object data, int i);
+        public delegate void InitDelegate(GridItem e, object data, int i);
         private IList contentData;
         public InitDelegate initDelegate;
-
-#if UNITY_EDITOR
-        protected override void Awake()
-        {
-            if (!Application.isPlaying)
-            {
-                if (viewport == null)
-                {
-                    viewport = transform as RectTransform;
-                    horizontal = false;
-                }
-            }
-        }
-#endif
-
-        private void Update()
-        {
-            if (Application.isPlaying && viewRect.hasChanged)
-            {
-                OnMove();
-            }
-        }
-
-        protected virtual void OnMove()
-        {
-            _localClipBounds = null;
-            WrapContent();
-        }
-
-        protected override void LateUpdate()
-        {
-            UpdateContentSize();
-            base.LateUpdate();
-        }
-
-        private RectTransform contentSizeRect;
-        private void UpdateContentSize()
-        {
-            if (Application.isPlaying && contentSizeRect == null)
-            {
-                var go = new GameObject("content-size", typeof(Image));
-                go.layer = gameObject.layer;
-                go.transform.SetParent(content, false);
-                contentSizeRect = go.transform as RectTransform;
-                var image = go.GetComponent<Image>();
-                image.color = new Color(1, 1, 1, 0);
-                contentSizeRect.sizeDelta = contentBounds.size;
-            }
-        }
 
         public bool isScrollable
         {
@@ -207,6 +160,61 @@ namespace mulova.ugui
             }
         }
 
+#if UNITY_EDITOR
+        protected override void Awake()
+        {
+            if (!Application.isPlaying)
+            {
+                if (viewport == null)
+                {
+                    viewport = transform as RectTransform;
+                    horizontal = false;
+                }
+            }
+        }
+#endif
+
+        protected override void Start()
+        {
+            base.Start();
+            onValueChanged.AddListener(OnValueChanged);
+        }
+
+        //private void Update()
+        //{
+        //    if (Application.isPlaying && viewRect.hasChanged)
+        //    {
+        //        OnValueChange();
+        //        viewRect.hasChanged = false;
+        //    }
+        //}
+
+
+        public void OnValueChanged(Vector2 v)
+        {
+            _localClipBounds = null;
+            WrapContent();
+        }
+        /*
+        protected override void LateUpdate()
+        {
+            UpdateContentSize();
+            base.LateUpdate();
+        }
+
+        private RectTransform contentSizeRect;
+        private void UpdateContentSize()
+        {
+            if (Application.isPlaying && contentSizeRect == null)
+            {
+                var go = new GameObject("content-size", typeof(InvisibleWidget));
+                go.layer = gameObject.layer;
+                go.transform.SetParent(content, false);
+                contentSizeRect = go.transform as RectTransform;
+                contentSizeRect.sizeDelta = contentBounds.size;
+            }
+        }
+        */
         public void Init(IList list, InitDelegate initDelegate = null, int focusIndex = -1)
         {
             contentData = list;
@@ -288,7 +296,7 @@ namespace mulova.ugui
             }
         }
 
-        private void InitItem(InstantGridItem c, int i)
+        private void InitItem(GridItem c, int i)
         {
             int iRow = i / lineItemSize;
             int iCol = i % lineItemSize;
@@ -477,7 +485,7 @@ namespace mulova.ugui
             content.pivot = new Vector2(0, 1);
             content.offsetMin = Vector2.zero;
             content.offsetMax = Vector2.zero;
-            var list = transform.GetComponentsInChildren<InstantGridItem>();
+            var list = transform.GetComponentsInChildren<GridItem>();
 #if UNITY_EDITOR
             if (!Application.isPlaying)
             {
@@ -527,7 +535,7 @@ namespace mulova.ugui
 
             foreach (Transform t in content)
             {
-                if (t.TryGetComponent<InstantGridItem>(out var e))
+                if (t.TryGetComponent<GridItem>(out var e))
                 {
                     if (Application.isPlaying)
                     {
@@ -547,21 +555,6 @@ namespace mulova.ugui
                     }
                 }
             }
-            InitContentRoot();
-        }
-
-        private void InitContentRoot()
-        {
-            if (viewport == null || content == null)
-            {
-                Debug.LogWarning("viewport or content is not assigned");
-                return;
-            }
-            content.anchorMin = Vector2.zero;
-            content.anchorMax = Vector3.one;
-            content.pivot = new Vector2(0, 1);
-            content.offsetMin = Vector2.zero;
-            content.offsetMax = Vector2.zero;
         }
 
         /// <summary>
@@ -664,6 +657,7 @@ namespace mulova.ugui
                     empty.SetActive(true);
                 }
             }
+            content.sizeDelta = contentBounds.size;
         }
 
         private void ShowCellsInViewport(float min, float max, bool refreshData)
@@ -815,7 +809,7 @@ namespace mulova.ugui
             return hasHidden;
         }
 
-        private void RemoveCell(InstantGridItem c)
+        private void RemoveCell(GridItem c)
         {
             available.Enqueue(c);
             visibles.Remove(c.item);
