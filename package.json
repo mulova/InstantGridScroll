@@ -1,0 +1,12 @@
+
+{
+	"name": "mulova.instantgridscroll",
+	"displayName": "InstantGridScroll",
+	"version": "1.0.0",
+	"unity": "2018.1",
+	"description": "Infinite Scroller",
+	"keywords": ["mulova", "scroll"],
+	"category": "mulova",
+	"dependencies": {
+	}
+}
