@@ -1,6 +1,9 @@
 {
     "name": "scroll-wrap",
-    "references": [],
+    "rootNamespace": "",
+    "references": [
+        "GUID:fb9b47fc427184aa2951643a25217cf0"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

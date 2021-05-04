@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Generic.Ex;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
@@ -735,8 +735,7 @@ namespace mulova.ugui
         {
             for (int i = i0; i <= i1; ++i)
             {
-                var c = visibles.Find(items[i]);
-                if (c != null)
+                if (visibles.TryGetValue(items[i], out var c))
                 {
                     items[i].pos = items[i].pos + new Vector2(dx, dy);
                     //items[i].bounds.center = items[i].bounds.center + new Vector3(dx, dy, 0);
@@ -748,8 +747,7 @@ namespace mulova.ugui
         private void ShowCell(int index, bool refreshData)
         {
             var item = items[index];
-            var c = visibles.Find(item);
-            if (c != null)
+            if (visibles.TryGetValue(item, out var c))
             {
                 c.pos = item.pos;
                 c.gameObject.SetActive(true);
