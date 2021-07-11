@@ -24,7 +24,7 @@ namespace mulova.ugui
 
             public override string ToString()
             {
-                return $"({pos.x},{pos.y})";
+                return $"({pos.x},{pos.y}) ({GetHashCode()})";
             }
 
             public override bool Equals(object obj)
@@ -34,7 +34,7 @@ namespace mulova.ugui
                     return true;
                 }
                 var that = obj as ItemData;
-                return pos.x.Equals(that.pos.x) && pos.y.Equals(that.pos.y);
+                return pos.x == that.pos.x && pos.y == that.pos.y;
             }
 
             public override int GetHashCode()
@@ -88,7 +88,7 @@ namespace mulova.ugui
         private Vector3[] corners;
         public Bounds CalculateRelativeRectTransformBounds(RectTransform root, RectTransform child)
         {
-            if (corners == null)
+            if (corners == null || corners.Length != 4)
             {
                 corners = new Vector3[4];
             }
@@ -130,10 +130,10 @@ namespace mulova.ugui
         private Dictionary<ItemData, GridItem> visibles = new Dictionary<ItemData, GridItem>();
         private Queue<GridItem> available = new Queue<GridItem>();
 
-        public bool isCentered => viewRect.pivot.x == 0.5f;
-        public bool isBottomPivot => viewRect.pivot.y == 0;
-        public bool isTopPivot => viewRect.pivot.y == 1;
-        public bool isLeftPivot => viewRect.pivot.x != 1;
+        public bool isBottomPivot => content.pivot.y == 0;
+        public bool isTopPivot => content.pivot.y == 1;
+        public bool isRightPivot => content.pivot.x == 1f;
+        public bool isLeftPivot => content.pivot.x == 0;
         public bool isScrollAtBottom => visibles.Count == 0 || (endIndex == items.Count - 1 && IsVisible(endIndex));
         private float top => localClipBounds.y + localClipBounds.height;
         private float bottom => top - localClipBounds.height;
@@ -242,13 +242,14 @@ namespace mulova.ugui
 
         public void HideAll()
         {
-            foreach (var c in children)
+            foreach (var pair in visibles)
             {
-                if (c.isValid)
-                {
-                    RemoveCell(c);
-                    c.gameObject.SetActive(false);
-                }
+                var item = pair.Value;
+                //if (item.isValid)
+                //{
+                    RemoveCell(item);
+                    item.gameObject.SetActive(false);
+                //}
             }
             items.Clear();
             startIndex = -1;
@@ -320,7 +321,7 @@ namespace mulova.ugui
                         {
                             var left = 0;
                             var right = localClipBounds.width;
-                            x = isLeftPivot ? left - min.x + border.x : right - max.x - border.x;
+                            x = isLeftPivot ? left - min.x + border.x : isRightPivot? right - max.x - border.x: (left+right)*0.5f;
                         }
                         else if (prefab != null)
                         {
@@ -336,13 +337,13 @@ namespace mulova.ugui
                         if (i == startIndex - 1)
                         {
                             var prevBound = items[startIndex].bounds;
-                            x = isLeftPivot ? prevBound.min.x - padding.x : prevBound.max.x + padding.x;
+                            x = isLeftPivot ? prevBound.min.x - padding.x : isRightPivot? prevBound.max.x + padding.x: prevBound.center.x;
                         }
                         // add to bottom
                         else if (i == endIndex + 1)
                         {
                             var prevBound = items[endIndex].bounds;
-                            x = isLeftPivot ? prevBound.max.x + padding.x : prevBound.min.x - padding.x;
+                            x = isLeftPivot ? prevBound.max.x + padding.x : isRightPivot? prevBound.min.x - padding.x: prevBound.center.x;
                         }
                     }
 
@@ -395,7 +396,7 @@ namespace mulova.ugui
                                 bound = items[endIndex].bounds;
                                 var pos = items[endIndex].pos;
                                 var span = items[endIndex].bounds.size.x + padding.x;
-                                pos.x = isLeftPivot? pos.x + span: pos.x - span;
+                                pos.x = isLeftPivot? pos.x + span: isRightPivot? pos.x - span: pos.x;
                                 items[i].pos = pos;
                             }
                             endIndex = i;
@@ -482,9 +483,9 @@ namespace mulova.ugui
                 Debug.LogWarning("viewport or content is not assigned");
                 return;
             }
-            content.pivot = new Vector2(0, 1);
-            content.offsetMin = Vector2.zero;
-            content.offsetMax = Vector2.zero;
+            //content.pivot = new Vector2(0, 1);
+            //content.offsetMin = Vector2.zero;
+            //content.offsetMax = Vector2.zero;
             var list = transform.GetComponentsInChildren<GridItem>();
 #if UNITY_EDITOR
             if (!Application.isPlaying)
@@ -747,7 +748,7 @@ namespace mulova.ugui
         private void ShowCell(int index, bool refreshData)
         {
             var item = items[index];
-            if (visibles.TryGetValue(item, out var c))
+            if (item != null && visibles.TryGetValue(item, out var c))
             {
                 c.pos = item.pos;
                 c.gameObject.SetActive(true);
